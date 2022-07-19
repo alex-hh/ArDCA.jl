@@ -1,3 +1,46 @@
+# https://discourse.julialang.org/t/how-to-export-a-column-vector-to-text-file-with-writedlm-function/37818
+function write_vector(vec::AbstractVector, filename::AbstractString)
+    io = open(filename, "w") do io
+        for x in vec
+            println(io, x)
+        end
+    end
+end
+
+function read_vector(filename::AbstractString)
+    vec = Vector{Float64}()
+    io = open(filename, "r") do io
+        for line in readlines(io)
+            if !isempty(line)
+                # println(line)
+                append!(vec, parse(Float64, line))
+            end
+        end
+    end
+    return vec
+end
+
+function write_dict(d::Dict, filename::AbstractString)
+    io = open(filename, "w") do io
+        for (key, val) in d
+            println(io, string(key, ",", val))
+        end
+    end
+end
+
+function read_dict(filename::AbstractString)
+    d = Dict()
+    io = open(filename, "r") do io
+        for line in readlines(io)
+            if !isempty(line)
+                key, val = split(line, ",")
+                d[key] = val
+            end
+        end
+    end
+    return d
+end
+
 function read_fasta(filename::AbstractString, max_gap_fraction::Real, theta::Any, remove_dups::Bool)
     Z = read_fasta_alignment(filename, max_gap_fraction)
     if remove_dups

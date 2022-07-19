@@ -1,4 +1,5 @@
 const allpermorder = [:NATURAL, :ENTROPIC, :REV_ENTROPIC, :RANDOM]
+
 """
     ardca(Z::Array{Ti,2},W::Vector{Float64}; kwds...)
 Auto-regressive analysis on the L×M alignment `Z` (numerically encoded in 1,…,21), and the `M`-dimensional normalized 
@@ -25,23 +26,32 @@ function ardca(Z::Array{Ti,2},W::Vector{Float64};
                 lambdaH::Real=0.01,
                 epsconv::Real=1.0e-5,
                 maxit::Int=1000,
+                output_file::Union{String, Nothing}=nothing,
                 verbose::Bool=true,
                 method::Symbol=:LD_LBFGS,
                 permorder::Union{Symbol,Vector{Int}}=:ENTROPIC
                 ) where Ti <: Integer
 
-    checkpermorder(permorder)
-    all(x -> x > 0, W) || throw(DomainError("vector W should normalized and with all positive elements"))
-    isapprox(sum(W), 1) || throw(DomainError("sum(W) ≠ 1. Consider normalizing the vector W"))
-    N, M = size(Z)
-    M = length(W)
-    q = Int(maximum(Z))
     aralg = ArAlg(method, verbose, epsconv, maxit)
-    arvar = ArVar(N, M, q, lambdaJ, lambdaH, Z, W, permorder)
+    arvar = ArVar(lambdaJ, lambdaH, Z, W, permorder)
     θ,psval = minimize_arnet(aralg, arvar)
     Base.GC.gc() # something wrong with SharedArrays on Mac
+    if !isnothing(output_file)
+        # N.B. the only config we need to know is permorder; but it makes sense also to save model-specific config
+        write_vector(θ, string(output_file, ".params"))
+        cfg_dict = Dict(
+            "lambdaJ"=>lambdaJ,
+            "lambdaH"=>lambdaH,
+            "permorder"=>permorder,
+            "epsconv"=>epsconv,
+            "maxit"=>maxit,
+            "method"=>method,
+        )
+        write_dict(cfg_dict, string(output_file, ".cfg"))
+    end
     ArNet(θ,arvar),arvar
 end
+
 """
     ardca(filename::String; kwds...)
 Run [`ardca`](@ref) on the fasta alignment in `filename`

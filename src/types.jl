@@ -1,16 +1,23 @@
 struct ArVar{Ti <: Integer}
-    N::Int
-    M::Int
-    q::Int
-    q2::Int
+    N::Int  # number of columns in alignment
+    M::Int  # number of sequences in alignment
+    q::Int  # alphabet size
+    q2::Int  # alphabet size squared
     lambdaJ::Float64
     lambdaH::Float64
-    Z::Array{Ti,2}
-    W::Array{Float64,1}
+    Z::Array{Ti,2}  # numeric MSA
+    W::Array{Float64,1}  # sequence weights
     IdxZ::Array{Int,2} # partial index computation to speed up energy calculation
     idxperm::Array{Int,1}
     
-    function ArVar(N, M, q, lambdaJ, lambdaH, Z::Array{Ti,2}, W::Array{Float64,1}, permorder::Union{Symbol,Vector{Int}}) where Ti <: Integer
+    function ArVar(lambdaJ, lambdaH, Z::Array{Ti,2}, W::Array{Float64,1}, permorder::Union{Symbol,Vector{Int}}) where Ti <: Integer
+        # constructor https://docs.julialang.org/en/v1/manual/constructors/
+        checkpermorder(permorder)
+        all(x -> x > 0, W) || throw(DomainError("vector W should normalized and with all positive elements"))
+        isapprox(sum(W), 1) || throw(DomainError("sum(W) ≠ 1. Consider normalizing the vector W"))
+        N, M = size(Z)  # number of columns, number of sequences
+        M = length(W)  # number of sequences
+        q = Int(maximum(Z))  # max index (i.e. alphabet size)
         idxperm = if typeof(permorder) == Symbol
             S = entropy(Z,W)
             if permorder === :ENTROPIC
@@ -67,6 +74,7 @@ function Base.show(io::IO, arnet::ArNet)
     print(io,"ArNet [N=$N q=$q]")
 end
 
+# run arnet on a vector representing a single single, outputing ?probability 
 function (A::ArNet)(x::Vector{T}) where T <: Integer 
     @extract A:J H p0 idxperm
     backorder = sortperm(idxperm)
@@ -79,6 +87,7 @@ function (A::ArNet)(x::Vector{T}) where T <: Integer
     return res
 end
 
+# run arnet on an alignment (first permuting the alignment according to arnet)
 function (A::ArNet)(x::Matrix{T}) where {T<:Integer}
     @extract A:J H p0 idxperm
     backorder = sortperm(idxperm)
