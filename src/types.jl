@@ -8,7 +8,8 @@ struct ArVar{Ti <: Integer}
     Z::Array{Ti,2}  # numeric MSA
     W::Array{Float64,1}  # sequence weights
     IdxZ::Array{Int,2} # partial index computation to speed up energy calculation
-    idxperm::Array{Int,1}
+    idxperm::Array{Int,1}  # permuted column indices
+    p0::Array{Float64,1}  # empirical frequencies in first column: might as well compute here
     
     function ArVar(lambdaJ, lambdaH, Z::Array{Ti,2}, W::Array{Float64,1}, permorder::Union{Symbol,Vector{Int}}) where Ti <: Integer
         # constructor https://docs.julialang.org/en/v1/manual/constructors/
@@ -45,7 +46,7 @@ struct ArVar{Ti <: Integer}
                 IdxZ[j,i] = (j - 1) * q2 + q * (Z[j,i] - 1)
             end
         end
-        new{Ti}(N, M, q, q^2, lambdaJ, lambdaH, Z, W, IdxZ,idxperm)
+        new{Ti}(N, M, q, q^2, lambdaJ, lambdaH, Z, W, IdxZ,idxperm,computep0(W,Z,q))
     end
 end
 
@@ -53,12 +54,22 @@ function Base.show(io::IO, arvar::ArVar)
     @extract arvar : N M q lambdaJ lambdaH Z
     print(io,"ArVar [N=$N M=$M q=$q λJ = $lambdaJ λH = $lambdaH Z::$(eltype(Z))]")
 end
+
+# the variables that need to be known to score/sample (rather than train)
+struct ArPredVar
+    N::Int
+    q::Int
+    idxperm::Array{Int,1}
+    p0::Array{Float64,1}
+end
+
 struct ArAlg
     method::Symbol
     verbose::Bool
     epsconv::Float64
     maxit::Int
 end
+
 struct ArNet
     idxperm::Array{Int,1}
     p0::Array{Float64,1}
@@ -66,7 +77,7 @@ struct ArNet
     H::Array{Array{Float64,1},1}
 end
 
-ArNet(θ,var::ArVar) = ArNet(var.idxperm, unpack_params(θ, var)...)
+ArNet(θ,var::Union{ArVar, ArPredVar}) = ArNet(var.idxperm, unpack_params(θ, var)...)  # ... here unpacks the tuple
 
 function Base.show(io::IO, arnet::ArNet)
     N = length(arnet.idxperm)

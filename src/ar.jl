@@ -46,8 +46,12 @@ function ardca(Z::Array{Ti,2},W::Vector{Float64};
             "epsconv"=>epsconv,
             "maxit"=>maxit,
             "method"=>method,
+            "idxperm"=>join(map(string, arvar.idxperm), ";"),
+            "p0"=>join(map(string, arvar.p0), ";"),
+            "N"=>arvar.N,
+            "q"=>arvar.q,
         )
-        write_dict(cfg_dict, string(output_file, ".cfg"))
+        write_dict(cfg_dict, string(output_file, ".conf"))
     end
     ArNet(θ,arvar),arvar
 end

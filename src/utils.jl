@@ -52,8 +52,9 @@ function read_fasta(filename::AbstractString, max_gap_fraction::Real, theta::Any
     return W, Z, N, M, q
 end
 
-function computep0(var)
-    @extract var:W Z q
+# these are empirical frequencies in the first column
+function computep0(W, Z, q)
+    # @extract var:W Z q
     p0 = zeros(q)
     for i in 1:length(W)
         p0[Z[1, i]] += W[i]
@@ -87,8 +88,32 @@ function entropy(Z::AbstractArray{Ti,2}, W::AbstractVector{Float64}) where {Ti<:
     S
 end
 
-function unpack_params(θ, arvar::ArVar)
-    @extract arvar:N q
+function load_conf(cfg_filename::String)
+    permorders = Dict("NATURAL" => :NATURAL, "ENTROPIC" => :ENTROPIC, "REV_ENTROPIC" => :REV_ENTROPIC, "RANDOMus" => :RANDOM)
+    d = read_dict(cfg_filename)
+    d["lambdaJ"] = parse(Float64, d["lambdaJ"])
+    d["lambdaH"] = parse(Float64, d["lambdaH"])
+    d["permorder"] = permorders[d["permorder"]]  # convert to symbol
+    d["epsconv"] = parse(Float64, d["epsconv"])
+    d["maxit"] = parse(Int, d["maxit"])
+    idxperm = map(x->parse(Int, x), split(d["idxperm"], ";"))
+    p0 = map(x->parse(Float64,x), split(d["p0"], ";"))
+    d["p0"] = p0
+    d["idxperm"] = idxperm
+    d["N"] = parse(Int, d["N"])
+    d["q"] = parse(Int, d["q"])
+    return d
+end
+
+function load_arnet(filename::String)
+    params = read_vector(string(filename, ".params"))
+    cfg_dict = load_conf(string(filename, ".conf"))
+    arvar = ArPredVar(cfg_dict["N"], cfg_dict["q"], cfg_dict["idxperm"], cfg_dict["p0"])
+    return ArNet(arvar.idxperm, unpack_params(params, arvar)...)  # ... here unpacks the tuple
+end
+
+function unpack_params(θ, arvar::Union{ArVar,ArPredVar})
+    @extract arvar:N q p0
 
     arrJ = Array{Float64,3}[]
     arrH = Vector{Float64}[]
@@ -112,7 +137,7 @@ function unpack_params(θ, arvar::ArVar)
         push!(arrH, _arrH)
     end
     @assert ctr == length(θ)
-    computep0(arvar), arrJ, arrH
+    p0, arrJ, arrH
 end
 
 function softmax!(r::Vector{Float64}, x::Vector{Float64})

@@ -11,7 +11,8 @@ using LoopVectorization: @avx
 using DCAUtils: read_fasta_alignment,remove_duplicate_sequences,compute_weights
 using DCAUtils.ReadFastaAlignment: letter2num
 
-export ardca,ArVar,ArAlg,ArNet,sample,sample_with_weights,epistatic_score,dms_single_site,loglikelihood
+# this determines which commands can be invoked from a session
+export ardca,ArVar,ArAlg,ArNet,sample,sample_with_weights,epistatic_score,dms_single_site,loglikelihood,load_arnet
 
 include("types.jl")
 include("ar.jl")
