@@ -16,9 +16,12 @@ function parse_commandline()
         	help = "File in which to store trained parameters"
         	required = true
         "--theta"
-            help = "reweighting threshold; defaults to auto (which corresponds to ??)"  # n.b. this is handled in the dependency DCAUtils. `θ` can be a real value between 0 and 1, or the symbol `:auto`, in which case the [`compute_theta`](@ref) function is used.
-            default = 0.8
-            arg_type = Union{Symbol, String, Float64}
+            help = "1 - reweighting pairwise identity threshold"
+            default = 0.2
+            arg_type = Float64
+        "--autotheta"
+            help = "automatically compute reweighting threshold. Computed as mean value of the similarity fraction between all possible pairs of sequences by dependency DCAUtils"
+            action = :store_true
         "--max_gap_fraction"
             help = "maximum fraction of gaps in a single sequence"
             arg_type = Float64
@@ -27,11 +30,11 @@ function parse_commandline()
             help = "permutation of MSA columns"
             default = "entropic"
         "--lambdaJ"
-            help = "regularisation strength for couplings"
+            help = "regularisation strength for couplings (paper uses 0.01 for contact experiments, 0.0001 for generation)"
             arg_type = Float64
             default = 0.01
         "--lambdaH"
-            help = "regularisation strength for fields"
+            help = "regularisation strength for fields (paper uses 0.0001 for contact experiments, 0.000001 for generation)"
             arg_type = Float64
             default = 0.0001
         "--maxit"
@@ -47,7 +50,7 @@ end
 
 
 parsed_args = parse_commandline()
-if parsed_args["theta"] == "auto":
+if parsed_args["autotheta"]
     parsed_args["theta"] = :auto
 end
 arnet,arvar=ardca(
