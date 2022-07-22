@@ -16,9 +16,9 @@ function parse_commandline()
         	help = "File in which to store trained parameters"
         	required = true
         "--theta"
-            help = "reweighting threshold; defaults to auto (which corresponds to ??)"
-            default = :auto
-            arg_type = Union{Symbol, Float64}
+            help = "reweighting threshold; defaults to auto (which corresponds to ??)"  # n.b. this is handled in the dependency DCAUtils. `θ` can be a real value between 0 and 1, or the symbol `:auto`, in which case the [`compute_theta`](@ref) function is used.
+            default = 0.8
+            arg_type = Union{Symbol, String, Float64}
         "--max_gap_fraction"
             help = "maximum fraction of gaps in a single sequence"
             arg_type = Float64
@@ -29,11 +29,11 @@ function parse_commandline()
         "--lambdaJ"
             help = "regularisation strength for couplings"
             arg_type = Float64
-            default = 0.02
+            default = 0.01
         "--lambdaH"
             help = "regularisation strength for fields"
             arg_type = Float64
-            default = 0.001
+            default = 0.0001
         "--maxit"
             help = "maximum number of iterations"
             arg_type = Int
@@ -47,6 +47,9 @@ end
 
 
 parsed_args = parse_commandline()
+if parsed_args["theta"] == "auto":
+    parsed_args["theta"] = :auto
+end
 arnet,arvar=ardca(
 	parsed_args["fastafile"],
 	theta=parsed_args["theta"],
