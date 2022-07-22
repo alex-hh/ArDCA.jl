@@ -171,16 +171,20 @@ julia> arnet,arvar=ardca("file.fasta",verbose=true,permorder=:ENTROPIC, lambdaJ=
 julia> Zgen=Zgen=sample(arnet,1000);
 ```
 """
-function sample(arnet::ArNet, msamples::Int)
+function sample(arnet::ArNet, msamples::Int; no_gaps::Bool=false, temperature::Float64=1.0)
     @extract arnet:H J p0 idxperm
     q = length(p0)
+    # to exclude gaps we simply exclude the last index from sampling
+    if no_gaps
+        q = q - 1
+    end
     N = length(H) # here N is N-1 !!
     backorder = sortperm(idxperm)
     res = Matrix{Int}(undef, N + 1, msamples)
     Threads.@threads for i in 1:msamples
         totH = Vector{Float64}(undef, q)
         sample_z = Vector{Int}(undef, N + 1)
-        sample_z[1] = wsample(1:q, p0)
+        sample_z[1] = wsample(1:q, p0[1:q])
         for site in 1:N
             Js = J[site]
             h = H[site]
@@ -190,8 +194,8 @@ function sample(arnet::ArNet, msamples::Int)
                     totH[a] += Js[a, sample_z[i], i]
                 end
             end
-            p = softmax(totH)
-            sample_z[site+1] = wsample(1:q, p)
+            p = softmax(totH / temperature)
+            sample_z[site+1] = wsample(1:q, p[1:q])
         end
         res[:, i] .= sample_z
     end
@@ -208,9 +212,13 @@ julia> arnet,arvar=ardca("file.fasta",verbose=true,permorder=:ENTROPIC, lambdaJ=
 julia> Wgen,Zgen=sample_with_weights(arnet,1000);
 ```
 """
-function sample_with_weights(arnet::ArNet, msamples)
+function sample_with_weights(arnet::ArNet, msamples; no_gaps::Bool=false, temperature::Float64=1.0)
     @extract arnet:H J p0 idxperm
     q = length(p0)
+    # to exclude gaps we simply exclude the last index from sampling
+    if no_gaps
+        q = q - 1
+    end
     N = length(H) # here N is N-1 !!
     backorder = sortperm(idxperm)
     W = Vector{Float64}(undef, msamples)
@@ -218,7 +226,7 @@ function sample_with_weights(arnet::ArNet, msamples)
     Threads.@threads for i in 1:msamples
         totH = Vector{Float64}(undef, q)
         sample_z = Vector{Int}(undef, N + 1)
-        sample_z[1] = wsample(1:q, p0)
+        sample_z[1] = wsample(1:q, p0[1:q])
         logw = log(p0[sample_z[1]])
         for site in 1:N
             Js = J[site]
@@ -229,8 +237,8 @@ function sample_with_weights(arnet::ArNet, msamples)
                     totH[a] += Js[a, sample_z[i], i]
                 end
             end
-            p = softmax(totH)
-            sample_z[site+1] = wsample(1:q, p)
+            p = softmax(totH / temperature)
+            sample_z[site+1] = wsample(1:q, p[1:q])
             logw += log(p[sample_z[site+1]])
         end
         W[i] = exp(logw)
@@ -252,9 +260,9 @@ julia> arnet,arvar=ardca("file.fasta",verbose=true,permorder=:ENTROPIC, lambdaJ=
 julia> Wgen,Zgen=sample_subsequence("MAKG",arnet,1000);
 ```
 """
-function sample_subsequence(x::String, arnet::ArNet, msamples)
+function sample_subsequence(x::String, arnet::ArNet, msamples; no_gaps::Bool=false, temperature::Float64=1.0)
     x0 = letter2num.(collect(x))
-    return sample_subsequence(x0, arnet, msamples)
+    return sample_subsequence(x0, arnet, msamples, no_gaps=no_gaps, temperature=temperature)
 end
 
 """
@@ -264,19 +272,27 @@ Return a generated alignment in the form of a `N × msamples`  matrix of type
 forced to start with with a sequence `x` (in integer number coding) 
 and then autoregressively generated.
 
+n.b. the seed is assumed to be in natural order. This makes this function somewhat
+unhelpful if the model uses e.g. entropic order, since then there is no guarantee
+that the seed will actually strongly influence the generation.
+
 # Example
 ```
 julia> arnet,arvar=ardca("file.fasta",verbose=true,permorder=:ENTROPIC, lambdaJ=0.001,lambdaH=0.001);
 julia> Wgen,Zgen=sample_subsequence([11,1,9,6],arnet,1000);
 ```
 """
-function sample_subsequence(x0::Vector{T}, arnet::ArNet, msamples) where {T<:Integer}
+function sample_subsequence(x0::Vector{T}, arnet::ArNet, msamples; no_gaps::Bool=false, temperature::Float64=1.0) where {T<:Integer}
     @extract arnet:H J p0 idxperm
     N = length(idxperm)
     length(x0) < N || error("Subsequence too long for the model")
     all(x -> 1 ≤ x ≤ 21, x0) || error("Subsequence numeric code should be in 1..21 ")
     l0 = length(x0)
     q = length(p0)
+    # to exclude gaps we simply exclude the last index from sampling
+    if no_gaps
+        q = q - 1
+    end
     N = length(H) # here N is N-1 !!
     backorder = sortperm(idxperm)
 
@@ -285,12 +301,16 @@ function sample_subsequence(x0::Vector{T}, arnet::ArNet, msamples) where {T<:Int
     Threads.@threads for i in 1:msamples
         totH = Vector{Float64}(undef, q)
         sample_z = -ones(Int, N + 1)
+
+        # WE ASSUME SEED IS IN ORIGINAL (NATURAL) ORDER. WE SCATTER SEED INTO PERMUTED SAMPLE_Z ARRAY.
+        # THEN AT THE END WE WILL PERMUTE BACK INTO NATURAL ORDER. I.E. seed[1] will be at 1 in output
+        # but at some other position (backorder[1]) in sample_z
         for k in 1:l0
             sample_z[backorder[k]] = x0[k]
         end
 
         if sample_z[1] == -1
-            sample_z[1] = wsample(1:q, p0)
+            sample_z[1] = wsample(1:q, p0[1:q])
         end
         logw = log(p0[sample_z[1]])
         for site in 1:N
@@ -302,9 +322,10 @@ function sample_subsequence(x0::Vector{T}, arnet::ArNet, msamples) where {T<:Int
                     totH[a] += Js[a, sample_z[i], i]
                 end
             end
-            p = softmax(totH)
+            p = softmax(totH / temperature)
+            # ONLY RE-SAMPLE THINGS THAT WEREN'T IN THE SEED
             if sample_z[site+1] == -1
-                sample_z[site+1] = wsample(1:q, p)
+                sample_z[site+1] = wsample(1:q, p[1:q])
             end
             logw += log(p[sample_z[site+1]])
         end

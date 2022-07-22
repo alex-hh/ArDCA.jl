@@ -49,6 +49,7 @@ function ardca(Z::Array{Ti,2},W::Vector{Float64};
             "idxperm"=>join(map(string, arvar.idxperm), ";"),
             "p0"=>join(map(string, arvar.p0), ";"),
             "N"=>arvar.N,
+            "M"=>arvar.M,
             "q"=>arvar.q,
         )
         write_dict(cfg_dict, string(output_file, ".conf"))
