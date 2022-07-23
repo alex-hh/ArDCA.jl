@@ -4,6 +4,7 @@ authors = ["Andrea Pagnani", "Jeanne Trinquier", "Guido Uguzzoni", "Martin Weigt
 version = "0.5.0"
 
 [deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 DCAUtils = "e41cd558-3099-4f6e-a65d-5336857e40aa"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
