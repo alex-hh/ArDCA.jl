@@ -12,6 +12,7 @@ ExtractMacro = "f86d3d12-fd5b-522c-99e9-61577282a1e9"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 NLopt = "76087f3c-5699-56af-9a33-bf431cd00edd"
+NPZ = "15e1cf62-19b3-5cfa-8e77-841668bca605"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 

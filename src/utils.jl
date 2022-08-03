@@ -106,7 +106,14 @@ function load_conf(cfg_filename::String)
 end
 
 function load_arnet(filename::String)
-    params = read_vector(string(filename, ".params"))
+    # TODO load npy file instead
+    if isfile(string(filename, ".params"))
+        params = read_vector(string(filename, ".params"))
+    elseif isfile(string(filename, ".params.npy"))
+        params = npzread(string(filename, ".params.npy"))
+    else
+        throw("couldn't find parameters")
+    end
     cfg_dict = load_conf(string(filename, ".conf"))
     arvar = ArPredVar(cfg_dict["N"], cfg_dict["q"], cfg_dict["idxperm"], cfg_dict["p0"])
     return ArNet(arvar.idxperm, unpack_params(params, arvar)...)  # ... here unpacks the tuple

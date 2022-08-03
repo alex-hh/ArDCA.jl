@@ -29,7 +29,9 @@ function ardca(Z::Array{Ti,2},W::Vector{Float64};
                 output_file::Union{String, Nothing}=nothing,
                 verbose::Bool=true,
                 method::Symbol=:LD_LBFGS,
-                permorder::Union{Symbol,Vector{Int}}=:ENTROPIC
+                permorder::Union{Symbol,Vector{Int}}=:ENTROPIC,
+                save_txt::Bool=false,
+                save_fp16::Bool=false,
                 ) where Ti <: Integer
 
     aralg = ArAlg(method, verbose, epsconv, maxit)
@@ -38,7 +40,14 @@ function ardca(Z::Array{Ti,2},W::Vector{Float64};
     Base.GC.gc() # something wrong with SharedArrays on Mac
     if !isnothing(output_file)
         # N.B. the only config we need to know is permorder; but it makes sense also to save model-specific config
-        write_vector(θ, string(output_file, ".params"))
+        if save_fp16
+            θ = convert(Vector{Float16}, θ)
+        end
+        if save_txt
+            write_vector(θ, string(output_file, ".params"))
+        else
+            npzwrite(string(output_file, ".params.npy"), θ)
+        end
         cfg_dict = Dict(
             "lambdaJ"=>lambdaJ,
             "lambdaH"=>lambdaH,

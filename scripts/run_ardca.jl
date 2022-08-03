@@ -44,6 +44,12 @@ function parse_commandline()
         "--verbose"
             help = "Run verbosely"
             action = :store_true
+        "--save_fp16"
+            help = "Save params at half precision"
+            action = :store_true
+        "--save_txt"
+            help = "Save numpy array containing params"
+            action = :store_true
     end
     return parse_args(s)
 end
@@ -63,4 +69,5 @@ arnet,arvar=ardca(
 	output_file=parsed_args["output_file"],
 	maxit=parsed_args["maxit"],
 	permorder=permorders[parsed_args["permorder"]],
+    save_fp16=parsed_args["save_fp16"]
 )
