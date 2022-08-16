@@ -21,7 +21,7 @@ Optional arguments:
 julia> arnet, arvar= ardca(Z,W,lambdaJ=0,lambdaH=0,permorder=:REV_ENTROPIC,epsconv=1e-12);
 ```
 """
-function ardca(Z::Array{Ti,2},W::Vector{Float64};
+function ardca(Z::Array{Ti,2},W::Vector{Float64},Meff::Float64;
                 lambdaJ::Real=0.01,
                 lambdaH::Real=0.01,
                 epsconv::Real=1.0e-5,
@@ -60,6 +60,7 @@ function ardca(Z::Array{Ti,2},W::Vector{Float64};
             "N"=>arvar.N,
             "M"=>arvar.M,
             "q"=>arvar.q,
+            "Meff"=>Meff,
         )
         write_dict(cfg_dict, string(output_file, ".conf"))
     end
@@ -97,8 +98,9 @@ function ardca(filename::String;
                 remove_dups::Bool=true,
                 kwds...)
     W, Z, _,_,_ = read_fasta(filename, max_gap_fraction, theta, remove_dups)
+    Meff = sum(W)
     W ./= sum(W)
-    ardca(Z, W; kwds...)
+    ardca(Z, W, Meff; kwds...)
 end
 
 function checkpermorder(po::Symbol)
