@@ -1,15 +1,35 @@
+"""
+Compute contacts by computing deltadeltaE i.e. energy difference
+between pair of mutations and single mutations
 
-function epistatic_score(arnet::ArNet, arvar::ArVar, seqid::Int; pc::Float64=0.1,min_separation::Int=1)
+this is a single background approximation to the highly intractable
+
+p(xi, xj)/p(xi)p(xj)
+
+(note intractability is due to impossibility of computing any of the marginals)
+
+It seems fairly surprising that this works from a single background.
+The point is that we compute energy difference of all possible mutations,
+so we are doing something very similar to what's done to infer contacts from
+experimental fitness measurements.
+
+Probably the pairwise parameterisation somehow ensures that the background isn't
+too important.
+
+pc is a pseudocount
+"""
+function epistatic_score(
+    arnet::ArNet, seqnumeric::Vector{T}; pc::Float64=0.1, min_separation::Int=1
+) where T <: Integer
     @extract arnet : H J p0 idxperm
-    @extract arvar : Z M N q 
-
-    1 ≤ seqid ≤ M || error("seqid=$seqid should be in the interval [1,...,$M]")
+    q = length(p0)
+    N = length(idxperm)
+    println(string("Alphabet size ", q, " num columns ", N))
 
     Da = zeros(q,N)
     Dab = zeros(q,q,N,N)
 
-    xori = Z[:,seqid]
-    xmut = [copy(xori) for _ in 1:Threads.nthreads()] 
+    xmut = [copy(seqnumeric) for _ in 1:Threads.nthreads()]
     arlike = [zeros(N) for _ in 1:Threads.nthreads()]
     ppc = (1-pc) * p0 + pc * ones(q)/q
     #_outputarnet!(arlike,xmut, J, H, ppc, N, q)
@@ -20,7 +40,7 @@ function epistatic_score(arnet::ArNet, arvar::ArVar, seqid::Int; pc::Float64=0.1
             xmut[Threads.threadid()][i] = a
             _outputarnet!(arlike[Threads.threadid()],xmut[Threads.threadid()], J, H, ppc, N, q)
             Da[a,i] = -sum(log.(arlike[Threads.threadid()]))
-            xmut[Threads.threadid()][i] = xori[i]
+            xmut[Threads.threadid()][i] = seqnumeric[i]
         end
     end  
     @inbounds for i in 1:N-1
@@ -32,8 +52,8 @@ function epistatic_score(arnet::ArNet, arvar::ArVar, seqid::Int; pc::Float64=0.1
                     xmut[Threads.threadid()][j] = b
                     _outputarnet!(arlike[Threads.threadid()],xmut[Threads.threadid()],J,H,ppc,N,q)        
                     Dab[b,a,j,i] = -sum(log.(arlike[Threads.threadid()]))
-                    xmut[Threads.threadid()][i] = xori[i]
-                    xmut[Threads.threadid()][j] = xori[j]
+                    xmut[Threads.threadid()][i] = seqnumeric[i]
+                    xmut[Threads.threadid()][j] = seqnumeric[j]
                 end
             end
         end
@@ -64,6 +84,24 @@ function epistatic_score(arnet::ArNet, arvar::ArVar, seqid::Int; pc::Float64=0.1
         push!(permtuple,(si,sj,val))
     end
     return permtuple
+end
+
+function epistatic_score(arnet::ArNet, sequence::String; pc::Float64=0.1, min_separation::Int=1)
+    @extract arnet: p0 idxperm
+    # convert sequence to numeric (c.f. loglikelihood code)
+    seqnumeric = letter2num.(collect(sequence))
+    return epistatic_score(arnet, seqnumeric, pc=pc, min_separation=min_separation)
+end
+
+# https://stackoverflow.com/questions/38166522/julia-function-with-different-parameter-subtypes
+function epistatic_score(
+    arnet::ArNet, Z::Array{T,2}, seqid::Int; pc::Float64=0.1,min_separation::Int=1
+) where T <: Integer
+    # run on sequence at position seqid in alignment stored in arvar
+    M = size(Z,1)
+    1 ≤ seqid ≤ M || error("seqid=$seqid should be in the interval [1,...,$M]")
+    xori = Z[:,seqid]
+    return epistatic_score(arnet, xori, pc=pc, min_separation=min_separation)
 end
 
 function zsg(J::Array{Float64,4})

@@ -102,6 +102,7 @@ function load_conf(cfg_filename::String)
     d["idxperm"] = idxperm
     d["N"] = parse(Int, d["N"])
     d["q"] = parse(Int, d["q"])
+    d["M"] = parse(Int, d["M"])
     return d
 end
 

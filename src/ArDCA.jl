@@ -13,7 +13,7 @@ using DCAUtils.ReadFastaAlignment: letter2num
 using NPZ: npzread, npzwrite
 
 # this determines which commands can be invoked from a session
-export ardca,ArVar,ArAlg,ArNet,sample,sample_with_weights,sample_subsequence,epistatic_score,dms_single_site,loglikelihood,load_arnet,write_vector
+export ardca,ArVar,ArAlg,ArNet,sample,sample_with_weights,sample_subsequence,epistatic_score,dms_single_site,loglikelihood,load_arnet,load_conf,write_vector
 
 include("types.jl")
 include("ar.jl")
