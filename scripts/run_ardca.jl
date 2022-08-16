@@ -1,4 +1,4 @@
-# Example julia -t 6 scripts/run_ardca.jl /Users/alex/proteins/aflatent/data/family/cm/cm_match_msa.fa testardca --verbose --lambdaJ 0.01 --lambdaH 0.01
+# Example julia -t 5 scripts/run_gdca.jl data/PF14/PF00014_mgap6.fasta outputs/ardca_PF14_conreg --verbose
 using ArDCA
 using ArgParse
 
@@ -48,7 +48,7 @@ function parse_commandline()
             help = "Save params at half precision"
             action = :store_true
         "--save_txt"
-            help = "Save numpy array containing params"
+            help = "Save text file containing params"
             action = :store_true
     end
     return parse_args(s)
@@ -59,6 +59,7 @@ parsed_args = parse_commandline()
 if parsed_args["autotheta"]
     parsed_args["theta"] = :auto
 end
+
 arnet,arvar=ardca(
 	parsed_args["fastafile"],
 	theta=parsed_args["theta"],

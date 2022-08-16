@@ -34,18 +34,6 @@ function parse_commandline()
 end
 
 
-function write_tuple_vector(vec::AbstractVector, filename::AbstractString; colnames::Tuple{Vararg{String}}=nothing)
-    io = open(filename, "w") do io
-        if !isnothing(colnames)
-            println(io, join(colnames, ","))
-        end
-        for x in vec
-            println(io, join(x, ","))
-        end
-    end
-end
-
-
 parsed_args = parse_commandline()
 arnet = load_arnet(parsed_args["ardca_filename"])
 cfg_dict = load_conf(string(parsed_args["ardca_filename"], ".conf"))

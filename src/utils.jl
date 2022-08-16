@@ -41,6 +41,17 @@ function read_dict(filename::AbstractString)
     return d
 end
 
+function write_tuple_vector(vec::AbstractVector, filename::AbstractString; colnames::Tuple{Vararg{String}}=nothing)
+    io = open(filename, "w") do io
+        if !isnothing(colnames)
+            println(io, join(colnames, ","))
+        end
+        for x in vec
+            println(io, join(x, ","))
+        end
+    end
+end
+
 function read_fasta(filename::AbstractString, max_gap_fraction::Real, theta::Any, remove_dups::Bool)
     Z = read_fasta_alignment(filename, max_gap_fraction)
     if remove_dups
