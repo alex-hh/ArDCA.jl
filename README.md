@@ -1,3 +1,32 @@
+# Pre-compiling
+
+in REPL:
+
+```julia
+using PackageCompiler
+create_sysimage(sysimage_path="sysimage_ardca.dylib", precompile_execution_file="scripts/run_gdca_precompile.jl")
+```
+
+To see the difference, compare:
+```julia
+julia --trace-compile=stderr --sysimage sysimage_ardca.dylib scripts/run_gdca_precompile.jl
+julia --trace-compile=stderr scripts/run_gdca_precompile.jl
+```
+
+n.b. here we omit the packages argument to create_sysimage.
+This ensures that all packages in the project are put in the sysimage.
+
+TODO: understand whether sysimage can be distributed
+think about making an App. The only difficulty is we need to probably
+move from using ArgParse to parsing cmd line args via ARGS
+so we should write some new entrypoints that handle this.
+https://julialang.github.io/PackageCompiler.jl/dev/apps.html#Creating-an-app
+https://github.com/JuliaLang/PackageCompiler.jl/tree/master/examples/MyApp
+
+Ref:
+https://www.youtube.com/watch?v=d7avhSuK2NA
+
+
 # ArDCA
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pagnani.github.io/ArDCA.jl/stable)
@@ -55,3 +84,12 @@ $> julia -t numcores # ncores can be as large as your available number of thread
 ## License
 
 This project is covered under the MIT License.
+
+
+## Example of loading and saving model
+
+using ArDCA
+arnet,arvar = ardca("/Users/alex/proteins/aflatent/data/family/cm/cm_match_msa.fa", output_file="inttest")
+loglikelihood("TSENPLLALREKISALDEKLLALLAERRELAVEVGKAKLLSHRPVRDIDRERDLLERLITLGKAHHLDAHYITRLFQLIIEDSVLTQQALLQQH", arnet)
+arnetreload = load_arnet("inttest")
+loglikelihood("TSENPLLALREKISALDEKLLALLAERRELAVEVGKAKLLSHRPVRDIDRERDLLERLITLGKAHHLDAHYITRLFQLIIEDSVLTQQALLQQH", arnetreload)
