@@ -29,6 +29,13 @@ https://github.com/JuliaLang/PackageCompiler.jl/tree/master/examples/MyApp
 Ref:
 https://www.youtube.com/watch?v=d7avhSuK2NA
 
+### Developing an app:
+
+```julia
+using ArDCA
+push!(ARGS, "gdca")  # modify args to test behaviour with different inputs.
+ArDCA.julia_main()
+```
 
 # ArDCA
 
