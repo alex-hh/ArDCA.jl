@@ -16,8 +16,11 @@ julia --trace-compile=stderr scripts/run_gdca_precompile.jl
 n.b. here we omit the packages argument to create_sysimage.
 This ensures that all packages in the project are put in the sysimage.
 
-TODO: understand whether sysimage can be distributed
-think about making an App. The only difficulty is we need to probably
+N.B. the sysimage can itself be redistributed - as long as packages don't
+rely on global paths to files on the local filesystem:
+https://stackoverflow.com/questions/69556287/moving-a-precompiled-sysimage-to-a-new-machine
+
+TODO think about making an App. The only difficulty is we need to probably
 move from using ArgParse to parsing cmd line args via ARGS
 so we should write some new entrypoints that handle this.
 https://julialang.github.io/PackageCompiler.jl/dev/apps.html#Creating-an-app
