@@ -7,6 +7,12 @@ using PackageCompiler
 create_sysimage(sysimage_path="sysimage_ardca.dylib", precompile_execution_file="scripts/run_gdca_precompile.jl")
 ```
 
+For app
+```julia
+using PackageCompiler
+create_app(".", "gDCACompiled")
+```
+
 To see the difference, compare:
 ```julia
 julia --trace-compile=stderr --sysimage sysimage_ardca.dylib scripts/run_gdca_precompile.jl
@@ -28,6 +34,7 @@ https://github.com/JuliaLang/PackageCompiler.jl/tree/master/examples/MyApp
 
 Ref:
 https://www.youtube.com/watch?v=d7avhSuK2NA
+
 
 ### Developing an app:
 
